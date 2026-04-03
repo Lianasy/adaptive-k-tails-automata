@@ -3,7 +3,7 @@ from typing import Dict, List, Set, Tuple, Optional, Any
 from collections import defaultdict
 from pathlib import Path
 import json
-import test
+
 
 
 class State:
@@ -417,5 +417,4 @@ def main():
 
     
 if __name__ == "__main__":
-    # main()
-    test.main()
+    main()
