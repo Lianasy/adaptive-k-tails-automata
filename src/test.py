@@ -1,4 +1,4 @@
-from k_tail_V4_4_compute_k_tailV3_mergeV1 import *
+from k_tail_V4_6_PTA_V2_compute_k_tailV5_mergeV1 import *
 
 
 def build_PTA_mannually_example1() -> Automaton:
@@ -17,12 +17,13 @@ def build_PTA_mannually_example2() -> Automaton:
     手动 PTA：两状态 A(初始, id=0)、B(id=1)，环 A --a--> B --b--> A。
     仅 A 为接受态（典型：语言包含 ε 与 (ab)^n 等以 A 结尾的串）。
     """
-    atm = Automaton(name="example2")
+    atm = Automaton(name="cyclic")
     A = atm.initial_state
     B = atm._add_state()
     A.transitions.append(("a", B))
+    A.transitions.append(("b", A))
     B.transitions.append(("b", A))
-    atm.alphabet.update({"a", "b"})
+    B.transitions.append(("a", B))
     A.is_accept = True
     B.is_accept = False
     return atm
@@ -49,8 +50,8 @@ def test1():
 
 def test2():
     atm = build_PTA_mannually_example2()
-    atm.export_to_dot(file_name="01-mutual-circle")
-    atm.compute_state_k_tail(1,4)
+    atm.export_to_dot(file_name="cyclic")
+    atm.compute_state_k_tail(1,2)
 
 def test3():
     atm = build_PTA_mannually_example3()
@@ -106,7 +107,7 @@ def test5():
 
 def main():
     # test1()
-    # test2()
+    test2()
     # test3()
     # test4()
     # test5()
