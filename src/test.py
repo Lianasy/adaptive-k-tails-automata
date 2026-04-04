@@ -29,15 +29,15 @@ def build_PTA_mannually_example2() -> Automaton:
     return atm
 
 def build_PTA_mannually_example3() -> Automaton:
-    train_file = 'training_data/automaton_5_2_2_0~0.txt' 
-    test_file  = 'training_data/automaton_5_2_2_0~1.txt'
+    train_file = 'data/training_data/automaton_5_2_2_0~0.txt' 
+    test_file  = 'data/training_data/automaton_5_2_2_0~1.txt'
     automaton_name = Path(train_file).name
 
     train_pos, train_neg = parse_traces(train_file)
     test_pos, test_neg = parse_traces(test_file)
 
     atm = Automaton(automaton_name)
-    atm.build_PTA_from_trace(train_pos)
+    atm.build_PTA_from_trace(train_pos, train_neg)
 
     return atm
 
@@ -66,12 +66,17 @@ def test3():
     print(f"🎲 随机选择 k    : {random_k}")
     print()
 
-    atm.compute_state_k_tail(start_state_id=random_state_id, k=random_k)
+    # atm.compute_state_k_tail(start_state_id=random_state_id, k=random_k)
+    result = atm.compute_state_k_tail(start_state_id=0, k=2)
+    atm.export_to_dot(file_name="THISONE")
+    print()
+    print(result)
+    print(type(result))
 
 def test4():
     atm = build_PTA_mannually_example3()
     atm.export_to_dot(file_name=f"{atm.name}" + "_before_merge")
-    all_state_ids = list(atm.states_Dict.keys())
+    # all_state_ids = list(atm.states_Dict.keys())
     # keep_state_id = random.choice(all_state_ids)
     # delete_state_id = random.choice(all_state_ids)
     keep_state_id = 21
@@ -107,8 +112,8 @@ def test5():
 
 def main():
     # test1()
-    test2()
-    # test3()
+    # test2()
+    test3()
     # test4()
     # test5()
     pass
