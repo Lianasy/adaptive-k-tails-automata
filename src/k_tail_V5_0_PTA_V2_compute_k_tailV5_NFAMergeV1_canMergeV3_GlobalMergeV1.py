@@ -433,20 +433,21 @@ class Automaton():
         keep_state = self.states_Dict[keep_state_id]
         delete_state = self.states_Dict[delete_state_id]
 
-        # 👇 核心：用字典 先保存 keep 原本的所有边
-        unique_trans = {}
+        existing = set()
         for sym, tgt in keep_state.transitions:
-            unique_trans[sym] = tgt
-
-        # 👇 关键：只添加 delete 里 **keep 没有的符号**
-        # 已经存在的 sym 跳过，不覆盖！
+            existing.add( (sym, tgt.id) )
+        # -------------------------
+        # 只添加【不存在的边】
+        # 同符号同目标 → 跳过（去重）
+        # 同符号不同目标 → 添加（保留NFA）
+        # -------------------------
         for sym, tgt in delete_state.transitions:
-            if sym not in unique_trans:
-                unique_trans[sym] = tgt
+            key = (sym, tgt.id)
+            if key not in existing:
+                keep_state.transitions.append( (sym, tgt) )
+                existing.add(key)
 
-        # 转回列表，去重完成
-        keep_state.transitions = [(s, t) for s, t in unique_trans.items()]
-        # 清空被删除状态的出边（安全清理）
+        # 清空被删除状态的出边
         delete_state.transitions.clear()
 
     def redirect_incoming(self, keep_state_id: int, delete_state_id: int) -> None:
