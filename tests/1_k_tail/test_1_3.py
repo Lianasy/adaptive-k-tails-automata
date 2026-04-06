@@ -1,5 +1,5 @@
 import pytest
-from src.k_tail_V4_6 import Automaton
+from src.k_tail_V5_2 import Automaton
 
 def create_automaton():
     """
@@ -20,7 +20,7 @@ def create_automaton():
     B.is_accept = False
     return atm
 
-@ pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "start_state_id, k, expected",
     [
         (0, 0, [" (accept)"]),

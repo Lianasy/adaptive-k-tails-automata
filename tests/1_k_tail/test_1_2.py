@@ -1,5 +1,5 @@
 import pytest
-from src.k_tail_V4_6 import Automaton
+from src.k_tail_V5_2 import Automaton
 
 def create_automaton():
     """
