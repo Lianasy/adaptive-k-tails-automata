@@ -1,7 +1,7 @@
 TEST_CASES = [
-    (0, 1, False),
+    (0, 1, True),
     (0, 2, True),
-    (0, 3, False),
+    (0, 3, True),
     (0, 4, True),
     (0, 5, False),
 

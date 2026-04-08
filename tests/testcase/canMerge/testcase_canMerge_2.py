@@ -6,7 +6,7 @@ TEST_CASES = [
     (0, 5, False),
     (0, 6, True),
 
-    (1, 2, False),
+    (1, 2, True),
     (1, 3, True),
     (1, 4, False),
     (1, 5, False),
@@ -21,7 +21,7 @@ TEST_CASES = [
     (3, 5, True),
     (3, 6, True),
 
-    (4, 5, True),
+    (4, 5, False),
     (4, 6, True),
 
     (5, 6, True),

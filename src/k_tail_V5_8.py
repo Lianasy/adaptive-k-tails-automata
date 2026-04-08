@@ -27,6 +27,29 @@ class Automaton():
         self.initial_state = self._add_state()  # 初始状态（根节点）
         self.name = name
 
+    def copy_automaton(self) -> "Automaton":
+        """深拷贝结构：新自动机状态 id 与原来一致，仅 State 对象是新实例。"""
+        old_ids = sorted(self.states_Dict.keys())
+        if not old_ids:
+            return Automaton(name=self.name + "_copy")
+        new_atm = Automaton(name=self.name + "_copy")
+        # __init__ 已创建 S0；补到与旧图相同 max_id
+        max_id = max(old_ids)
+        while len(new_atm.states_Dict) <= max_id:
+            new_atm._add_state()
+        for oid_id in old_ids:
+            new_state = new_atm.states_Dict[oid_id]
+            old_state = self.states_Dict[oid_id]
+            new_state.is_accept = old_state.is_accept
+            new_state.transitions.clear()
+            for sym, tgt in old_state.transitions:
+                new_state.transitions.append((sym, new_atm.states_Dict[tgt.id]))
+        new_atm.initial_state = new_atm.states_Dict[self.initial_state.id]
+        new_atm.alphabet = set(self.alphabet)
+        if hasattr(self, "k_vector"):
+            new_atm.k_vector = dict(self.k_vector)
+        return new_atm
+
     def _add_state(self):
         state_id=len(self.states_Dict)
         new_state = State(state_id)  # 用列表长度作为状态ID（自动递增）
@@ -81,9 +104,6 @@ class Automaton():
 
                 # 负样本关键：只把最后一个状态设为 rejected
                 current_state.is_accept = False
-
-    def build_PTA_mannually_example1():
-        pass
 
     def print_pta(
         self,
@@ -180,9 +200,11 @@ class Automaton():
             "FP": fp,
             "num_pos": len(pos_traces),
             "num_neg": len(neg_traces),
+            "num_states": len(self.states_Dict)
         }
         if verbose:
             print("=== BCR evaluation ===")
+            print(f"ATM states num = {len(self.states_Dict)}")
             print(f"Positive traces: {len(pos_traces)} | Negative traces: {len(neg_traces)}")
             print(f"TP={tp}  FN={fn}  TN={tn}  FP={fp}")
             print(f"Sensitivity (TPR): {sens:.4f}")
@@ -320,10 +342,13 @@ class Automaton():
         
         print(f"✅ DOT saved：{final_path}")
 
-    def can_merge(self, keep_state_id: int, delete_state_id: int, verbose: bool = True) -> bool:
+    def can_merge(self, state1_id: int, state2_id: int, verbose: bool = True) -> bool:
         """检查两个状态是否可以合并的辅助方法
         各种检查，检查到不合理就return false，如果各种检查都通过，直接最后自动return True
         """
+
+        keep_state_id = min(state1_id,state2_id)
+        delete_state_id  = max(state1_id,state2_id)
 
         if keep_state_id == delete_state_id:                                      # 如果两个状态ID一致，那么肯定就不合并，自己跟自己合并要出问题
             if verbose: print(f"keep_state_id = {keep_state_id} is the same as delete_state_id = {delete_state_id}")
@@ -334,77 +359,19 @@ class Automaton():
             print(f"keep_state_id = {keep_state_id} or delete_state_id = {delete_state_id} not existed in Automaton.states_Dict")
             print(f"❌Fail to pass the can_merge check for S{delete_state_id} and S{keep_state_id}")
             return False
-        
-        # 获取两个状态
-        keep_state = self.states_Dict[keep_state_id]
-        delete_state = self.states_Dict[delete_state_id]
 
-        # ========================
-    # 【递归子函数】检查所有NFA冲突
-    # ========================
-        def check_all_nfa_conflicts(s1: State, s2: State, visited: set) -> bool:
-            """
-            递归检查：合并 s1+s2 会不会产生非法NFA
-            规则：
-            1. 同一个符号 → 两个目标
-            2. 若目标 accept 不同 → 非法
-            3. 若目标 accept 相同 → 递归检查它们的冲突
-            所有路径必须全部合法才 return True
-            """
-            pair = (min(s1.id, s2.id), max(s1.id, s2.id))
-            if pair in visited:
-                if verbose: print(f"Circle meet✅ S{s1.id} vs S{s2.id} NFA checked")
-                return True
-            visited.add(pair)
+        dummy_atm = self.copy_automaton()
+        dummy_atm.do_single_merge(keep_state_id,delete_state_id)
+        can_merge_test = dummy_atm.simulate_NFA_merge(keep_state_id)
 
-            # 构建 s1 的转移字典，这里使用了字典，是默认没有NFA的情况，但是我不确定在我的逻辑中，使用can_merge的时候会不会出现NFA，因为我尝试使用NFA_merge将所有NFA状态都merge成DFA
-            trans1 = {sym: tgt for sym, tgt in s1.transitions}
-            trans2 = {sym: tgt for sym, tgt in s2.transitions}
-            if verbose: print(f"keep-S{s1.id} = {trans1}")
-            if verbose: print(f"delete-S{s2.id} = {trans2}")
+        return can_merge_test
 
-            # 遍历 s2 的所有边，检查是否与 s1 冲突
-            for sym, t2 in s2.transitions:
-                if sym not in trans1:
-                    continue
-                if verbose: print(f"S{s1.id} vs S{s2.id} find conflict sym = {sym}")
 
-                # 冲突：同一个符号 → 两个目标
-                t1 = trans1[sym]
+    def do_single_merge(self, state1_id: int, state2_id: int) -> bool:
 
-                if verbose: print(f"   Check NFA conflict: [{s1.id},{s2.id}] sym='{sym}' → S{t1.id} vs S{t2.id}")
+        keep_state_id = min(state1_id, state2_id)
+        delete_state_id = max(state1_id, state2_id)
 
-                # 规则1：accept 不同 → 直接非法
-                if t1.is_accept != t2.is_accept:
-                    if verbose: print(f"❌ Conflict: tgt accept different → S{t1.id}={t1.is_accept}, S{t2.id}={t2.is_accept} -- > lead to check_all_nfa_conflict() return False")
-                    return False
-
-                # 规则2：accept 相同 → 必须递归检查这两个子节点
-                if t1.is_accept == t2.is_accept:
-                    if verbose: print(f"✅ tgt accept same → S{t1.id}={t1.is_accept}, S{t2.id}={t2.is_accept}")
-                    if verbose: print(f"chekcing child NFA conflict validation S{t1.id} vs S{t2.id}")
-                    child_NFA_check = check_all_nfa_conflicts(t1, t2, visited)
-                    if child_NFA_check == False:
-                        if verbose: print(f"❌ Recursive NFA check Fail for S{t1.id} & S{t2.id} -- > lead to check_all_nfa_conflict() return False")
-                        return False
-                    if child_NFA_check == True:
-                        if verbose: print(f"✅ Recursive NFA check PASS for S{t1.id} & S{t2.id} -- > next round of FOR loop of sym check of S{s1.id} vs S{s2.id}")
-
-            # 所有冲突都检查完毕 ✅
-            if verbose: print(f"✅ S{s1.id} vs S{s2.id} all conflict checked and PASS")
-            return True
-
-        # ========================
-        # 启动递归检查
-        # ========================
-        if check_all_nfa_conflicts(keep_state, delete_state,set()):
-            print(f"✅ can_merge PASSED: S{delete_state_id} can merge into S{keep_state_id}")
-            return True
-        else:
-            print(f"❌ can_merge FAILED: S{delete_state_id} cannot merge into S{keep_state_id}")
-            return False
-
-    def do_single_merge(self, keep_state_id: int, delete_state_id: int) -> bool:
         if delete_state_id not in self.states_Dict or keep_state_id not in self.states_Dict:
             print(f"When checking do_singale_merge:keep_state_id = {keep_state_id} or delete_state_id = {delete_state_id} not existed in Automaton.states_Dict")
             return False
@@ -513,13 +480,14 @@ class Automaton():
                 if verbose: print(f"✅ S{state_id} [{sym}] has no repeted target")
                 continue  # 没有NFA，跳过
             if len(target_states) > 1:
-                target_ids = [t.id for t in target_states]
-                if verbose: print(f"\n⚠️  NFA found ：S{state_id} -{sym} → {target_ids}")
+                target_states_sorted = sorted(target_states, key=lambda x: x.id)
+                target_ids_sorted = [t.id for t in target_states_sorted]
+                if verbose: print(f"\n⚠️  NFA found ：S{state_id} -{sym} → {target_ids_sorted}")
 
                 # 策略：把后面所有的都合并到第一个 target 上
-                keep_state_id = target_states[0].id
-                print(f"!!!!!!!!!!!!!target_states[1:] = {target_states[1:]}")
-                for tgt in target_states[1:]:
+                keep_state_id = target_states_sorted[0].id
+                print(f"!!!!!!!!!!!!!target_states[1:] = {target_states_sorted[1:]}")
+                for tgt in target_states_sorted[1:]:
                     if state_id not in self.states_Dict:
                         continue
                     del_id = tgt.id
@@ -530,6 +498,67 @@ class Automaton():
                     
                     self.NFA_merge(keep_state_id)
         return 
+    
+    def simulate_NFA_merge(self, state_id: int, verbose:bool = True) -> None:
+        """
+        在「当前dummy自动机」上模拟消除 NFA（与 NFA_merge 同结构，但返回是否全程可完成）：
+        1. 若某符号存在多个不同目标，则依次将后续目标并入 id 最小的目标；
+        2. 合并前若两个状态都在 states_Dict 中，则必须 is_accept 一致，否则返回 False；
+        3. 若某一侧已不在 states_Dict（可能被前面合并删掉），跳过该次，不算失败；
+        4. 递归直到当前 state 上无「同符多目标」；
+        5. 全程无失败则返回 True。
+        """
+        # 状态不存在，直接返回
+        if state_id not in self.states_Dict:
+            if verbose: print(f"S({state_id} no exists, can't do NFA merge)")
+            return 
+        
+        state = self.states_Dict[state_id]
+
+        # 按符号分组出边：sym -> [target_state1, target_state2...]
+        sym_groups = defaultdict(list)
+        for sym, tgt_state in state.transitions:
+            sym_groups[sym].append(tgt_state)
+
+        # 遍历每个符号，检查是否出现 NFA（一个符号 → 多个目标）
+        for sym, target_states in sym_groups.items():
+            if len(target_states) <= 1:
+                if verbose: print(f"DUMMY:✅ S{state_id} [{sym}] has no repeted target")
+                continue  # 没有NFA，跳过
+            if len(target_states) > 1:
+                if verbose: print(f"DUMMY:now checking S{state_id}[{sym}], see if leading to multiple target state")
+                target_states_sorted = sorted(target_states, key=lambda x: x.id)
+                target_ids_sorted = [t.id for t in target_states_sorted]
+                if verbose: print(f"\n⚠️  DUMMY:NFA found ：S{state_id} -{sym} → {target_ids_sorted}")
+
+                # 策略：把后面所有的都合并到第一个 target 上
+                keep_state_id = target_states_sorted[0].id
+                print(f"DUMMY:!!!!!!!!!!!!!target_states[1:] = {target_states_sorted[1:]}")
+                for tgt in target_states_sorted[1:]:
+                    if state_id not in self.states_Dict:
+                        continue
+                    del_id = tgt.id
+
+                    if keep_state_id not in self.states_Dict or del_id not in self.states_Dict:
+                        if verbose:print(f"DUMMY:⏭️ skip S{keep_state_id} <- S{del_id}: not both in states_Dict, continue")
+                        continue
+                    
+                    keep_state = self.states_Dict[keep_state_id]
+                    del_state = self.states_Dict[del_id]
+
+                    if keep_state.is_accept != del_state.is_accept:
+                        if verbose:print(f"DUMMY:❌ simulate_NFA_merge failed: S{keep_state_id}.is_accept={keep_state.is_accept} != S{del_id}.is_accept={del_state.is_accept}")
+                        return False
+
+                    print(f"DUMMY:   → merge NFA：S{keep_state_id} <- S{del_id}")
+
+                    # 直接合并（因为是修复NFA，必须合并）
+                    self.do_single_merge(keep_state_id, del_id)
+                    NFA_merge_succ = self.simulate_NFA_merge(keep_state_id)
+                    if NFA_merge_succ == False:
+                        return False
+                    
+        return True
 
     def Global_merge(self, k: int, verbose:bool = False) -> None:
         """
@@ -553,7 +582,10 @@ class Automaton():
             state_ids = list(self.states_Dict.keys())  # 每次重新获取当前所有状态
             state_total = len(state_ids)
 
-            print(f"\n===== {round_count}-th round | current state number ：{state_total} =====")
+            
+
+
+            print(f"\n===== {round_count}-th round | current state number :{state_total} =====")
             for i in range(state_total):
                 state1_id = state_ids[i]
                 for j in range(i + 1, state_total):
@@ -561,16 +593,27 @@ class Automaton():
                 
                     print(f"\n----------------------------------------")
                     print(f"checking pairs to merge：S{state1_id} ↔ S{state2_id}")
+
+                    if state1_id not in self.states_Dict or state2_id not in self.states_Dict:
+                        print(f"When providing two pairs:keep_state_id = {state1_id} or delete_state_id = {state2_id} not existed in Automaton.states_Dict, try next pair")
+                        continue
+
                     kt_state1 = self.compute_state_k_tail(state1_id, k,verbose=verbose)
                     kt_state2 = self.compute_state_k_tail(state2_id, k,verbose=verbose)
                     print(f"{k}-tail of S{state1_id}: {kt_state1}")
                     print(f"{k}-tail of S{state2_id}: {kt_state2}")
 
-                    if kt_state1 != kt_state2:
-                        print(f"S{state1_id} ↔ S{state2_id} ❌ k-tail different, try next pair")
+                    if (kt_state1 is None) or (kt_state2 is None):
+                        print(f"S{state1_id} ↔ S{state2_id} ❌ skip: k-tail missing (None)")
                         continue
-                    if kt_state1 == kt_state2:
-                        print(f"S{state1_id} ↔ S{state2_id} ✅ k-tail same, checking can_merge validation")
+                    
+                    common_k_tail = set(kt_state1) & set(kt_state2)
+                    
+                    if not common_k_tail:
+                        print(f"S{state1_id} ↔ S{state2_id} ❌ have NO common {k}-tail different, try next pair")
+                        continue
+                    if common_k_tail:
+                        print(f"S{state1_id} ↔ S{state2_id} ✅ HAVE COMMON {k}-tail : {common_k_tail}, \n checking can_merge validation")
                         canMerge = self.can_merge(state1_id, state2_id,verbose=verbose)
                         
                         if canMerge == False:
@@ -582,7 +625,8 @@ class Automaton():
                             if_merged = True  # 标记本轮发生了合并
                             print(f"✅ single_merge success {state1_id} <- S{state2_id}")
                             print(f" conduct NFA_merge S{state1_id}")
-                            self.NFA_merge(state1_id,verbose=verbose)
+                            keep_state_id = min(state1_id, state2_id)
+                            self.NFA_merge(keep_state_id,verbose=verbose)
 
                             break # exit j loop
 

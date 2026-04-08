@@ -11,8 +11,9 @@ def test_k_tail(
     start_state_id,
     k,
     expected
-    ):
+):
+    atm = atm_case_3
 
-    result = atm_case_3.compute_state_k_tail(start_state_id, k)
+    result = atm.compute_state_k_tail(start_state_id, k)
 
     assert result == expected

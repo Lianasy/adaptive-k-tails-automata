@@ -1,6 +1,6 @@
 import pytest
 from src.function import parse_traces
-from src.k_tail_V5_2 import Automaton
+from src.k_tail_V5_8 import Automaton
 
 
 @pytest.fixture(scope="function")
