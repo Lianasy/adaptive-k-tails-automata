@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+from src.feature_extraction import build_dataset_with_labels
+from sklearn.model_selection import train_test_split
 
 class KModel(nn.Module):
 
@@ -23,8 +24,36 @@ class KModel(nn.Module):
         x = x.view(-1, self.num_symbols, self.num_classes)
         return x
 
-def get_features(train_samples, train_labels, val_samples, val_labels, test_sample):
-    pass
+def get_features(folder):
+
+    # LOAD DATA
+    X_df, y_df, alphabet = build_dataset_with_labels(folder)
+
+    #  SPLIT: 1 test sample
+    X_temp, X_test, y_temp, y_test = train_test_split(
+        X_df, y_df,
+        test_size=1,
+        random_state=42
+    )
+
+    # SPLIT: train / val
+    X_train, X_val, y_train, y_val = train_test_split(
+        X_temp, y_temp,
+        test_size=0.2,
+        random_state=42
+    )
+
+    #  TO NUMPY
+    X_train = X_train.values
+    y_train = y_train.values
+
+    X_val = X_val.values
+    y_val = y_val.values
+
+    X_test = X_test.values
+    y_test = y_test.values
+
+    return X_train, y_train, X_val, y_val, X_test, y_test, alphabet
 
 def train_model(model, X_train, y_train, X_val, y_val, epochs=100, lr=0.001):
 
@@ -76,18 +105,26 @@ def train_model(model, X_train, y_train, X_val, y_val, epochs=100, lr=0.001):
 
     return model
 
-def runMLP(train_samples, train_labels, val_samples, val_labels, test_sample, num_k_classes=4, epochs=100, lr=0.001):
-    X_train, y_train, X_val, y_val, test_features = get_features(train_samples, train_labels, val_samples, val_labels, test_sample)
+def runMLP(folder, num_k_classes=4, epochs=100, lr=0.001):
+
+    #  GET FEATURES
+    X_train, y_train, X_val, y_val, X_test, y_test, alphabet = get_features(folder)
+
+    # TO TORCH
     X_train = torch.tensor(X_train, dtype=torch.float32)
     y_train = torch.tensor(y_train, dtype=torch.long) - 1
 
     X_val = torch.tensor(X_val, dtype=torch.float32)
     y_val = torch.tensor(y_val, dtype=torch.long) - 1
 
+    X_test = torch.tensor(X_test, dtype=torch.float32)
+
+    # MODEL
     input_size = X_train.shape[1]
     num_symbols = y_train.shape[1]
 
     model = KModel(input_size, num_symbols, num_k_classes)
+
     model = train_model(
         model,
         X_train, y_train,
@@ -95,20 +132,27 @@ def runMLP(train_samples, train_labels, val_samples, val_labels, test_sample, nu
         epochs=epochs,
         lr=lr
     )
+
+    # PREDICT ONE TEST SAMPLE
     model.eval()
 
     with torch.no_grad():
-        pred = model(test_features)
+        pred = model(X_test[0].unsqueeze(0))
+
     k_vector = torch.argmax(pred, dim=2) + 1
     k_vector = k_vector.squeeze().tolist()
+
     return k_vector
 
 num_k_classes = 4
 epochs = 100
-train_samples = None
-train_labels = None
-val_samples = None
-val_labels = None
-test_sample = None
+folder = "../output/10_state/10_state"
 
-k_vector = runMLP(train_samples, train_labels, val_samples, val_labels, test_sample, num_k_classes=4, epochs=100, lr=0.001)
+k_vector = runMLP(
+    folder,
+    num_k_classes=4,
+    epochs=100,
+    lr=0.001
+)
+
+print("Predicted k-vector:", k_vector)
