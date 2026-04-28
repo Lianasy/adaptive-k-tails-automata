@@ -1,0 +1,8 @@
+=== BCR evaluation k-vector = {'L0': 2, 'L1': 2, 'L2': 3, 'L3': 3, 'L4': 3}===
+ATM states num = 107
+Positive traces: 90 | Negative traces: 90
+TP=73  FN=17  TN=71  FP=19
+Sensitivity (TPR): 0.8111
+Specificity (TNR): 0.7889
+BCR:               0.8000
+Evaluation time: 612.04 seconds

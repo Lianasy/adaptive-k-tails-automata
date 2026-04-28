@@ -1,0 +1,8 @@
+=== BCR evaluation k=3===
+ATM states num = 105
+Positive traces: 90 | Negative traces: 90
+TP=69  FN=21  TN=84  FP=6
+Sensitivity (TPR): 0.7667
+Specificity (TNR): 0.9333
+BCR:               0.8500
+Elapsed time:      6.07 seconds

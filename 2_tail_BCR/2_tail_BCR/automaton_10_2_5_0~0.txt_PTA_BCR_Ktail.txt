@@ -1,0 +1,6 @@
+=== PTA evaluation ===
+PTA states num = 498
+PTA alphabet: {L0, L1, L2, L3, L4}
+PTA (BCR): 0.6833
+PTA (Sensitivity): 0.3667
+PTA (Specificity): 1.0000
