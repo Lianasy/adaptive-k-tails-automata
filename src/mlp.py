@@ -187,4 +187,4 @@ k_vectors = runMLP(
 print("Predicted k-vector:", k_vectors)
 
 df = pd.DataFrame(k_vectors)
-df.to_csv("../data/k_vectors.csv", index=False, header=False)
+df.to_csv("../output/k_vectors.csv", index=False, header=False)
