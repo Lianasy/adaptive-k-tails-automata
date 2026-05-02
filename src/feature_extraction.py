@@ -290,6 +290,12 @@ def get_feature_names(alphabet):
         ])
 
     return feature_names
+import re
+
+def extract_index(filename):
+    match = re.search(r'~(\d+)_PTA\.json', filename)
+    return int(match.group(1)) if match else -1
+
 
 def build_dataset_with_labels(folder_path):
     X = []
@@ -297,8 +303,10 @@ def build_dataset_with_labels(folder_path):
 
     files = os.listdir(folder_path)
 
-    pta_files = [f for f in files if f.endswith("_PTA.json")]
-
+    pta_files = sorted(
+        [f for f in files if f.endswith("_PTA.json")],
+        key=extract_index
+    )
     global_symbols = set()
 
     for file in pta_files:
