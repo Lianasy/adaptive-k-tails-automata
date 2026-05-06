@@ -1,4 +1,10 @@
+
 venv/
 __pycache__/
 *.pyc
 *.png
+data/*
+!data/*.zip
+
+__pycache__/
+>>>>>>> 989dee05ff112421222f45a38cebc28135a65378

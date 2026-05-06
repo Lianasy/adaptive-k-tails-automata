@@ -1,0 +1,91 @@
+TEST_CASES = [
+    (0, 0, [' (accept)']),
+    (0, 1, ['a (accept)', 'b (accept)']),
+    (0, 2, ['aa (accept)', 'ab (accept)', 'ba (accept)', 'bb (accept)']),
+    (0, 3, ['aaa (accept)', 'aab (rejected)', 'aba (accept)', 'abb (rejected)', 'baa (accept)', 'bab (rejected)', 'bba (rejected)', 'bbb (rejected)']),
+    (0, 4, None),
+    
+    (1, 0, [' (accept)']),
+    (1, 1, ['a (accept)', 'b (accept)']),
+    (1, 2, ['aa (accept)', 'ab (rejected)', 'ba (accept)', 'bb (rejected)']),
+    (1, 3, None),
+    (1, 4, None),
+    
+    (2, 0, [' (accept)']),
+    (2, 1, ['a (accept)', 'b (accept)']),
+    (2, 2, ['aa (accept)', 'ab (rejected)', 'ba (rejected)', 'bb (rejected)']),
+    (2, 3, None),
+    (2, 4, None),
+    
+    (3, 0, [' (accept)']),
+    (3, 1, ['a (accept)', 'b (rejected)']),
+    (3, 2, None),
+    (3, 3, None),
+    (3, 4, None),
+    
+    (4, 0, [' (accept)']),
+    (4, 1, ['a (accept)', 'b (rejected)']),
+    (4, 2, None),
+    (4, 3, None),
+    (4, 4, None),
+    
+    (5, 0, [' (accept)']),
+    (5, 1, ['a (accept)', 'b (rejected)']),
+    (5, 2, None),
+    (5, 3, None),
+    (5, 4, None),
+    
+    (6, 0, [' (accept)']),
+    (6, 1, ['a (rejected)', 'b (rejected)']),
+    (6, 2, None),
+    (6, 3, None),
+    (6, 4, None),
+    
+    (7, 0, [' (accept)']),
+    (7, 1, None),
+    (7, 2, None),
+    (7, 3, None),
+    (7, 4, None),
+    
+    (8, 0, [' (rejected)']),
+    (8, 1, None),
+    (8, 2, None),
+    (8, 3, None),
+    (8, 4, None),
+    
+    (9, 0, [' (accept)']),
+    (9, 1, None),
+    (9, 2, None),
+    (9, 3, None),
+    (9, 4, None),
+    
+    (10, 0, [' (rejected)']),
+    (10, 1, None),
+    (10, 2, None),
+    (10, 3, None),
+    (10, 4, None),
+    
+    (11, 0, [' (accept)']),
+    (11, 1, None),
+    (11, 2, None),
+    (11, 3, None),
+    (11, 4, None),
+    
+    (12, 0, [' (rejected)']),
+    (12, 1, None),
+    (12, 2, None),
+    (12, 3, None),
+    (12, 4, None),
+    
+    (13, 0, [' (rejected)']),
+    (13, 1, None),
+    (13, 2, None),
+    (13, 3, None),
+    (13, 4, None),
+    
+    (14, 0, [' (rejected)']),
+    (14, 1, None),
+    (14, 2, None),
+    (14, 3, None),
+    (14, 4, None)
+    ]
