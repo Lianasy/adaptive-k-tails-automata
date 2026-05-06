@@ -1,9 +1,10 @@
 import os
 import re
-import pandas as pd   # ✅ REQUIRED FIX
+import pandas as pd
+import matplotlib.pyplot as plt
 
-# 👉 Your main folder
-RESULT_FOLDER = r"C:\Users\HP\Downloads\evl output"
+# 👉 Main folder (change if needed)
+RESULT_FOLDER = r"C:\Users\HP\Downloads\output"
 
 
 # -----------------------------
@@ -14,7 +15,6 @@ def extract_metrics(text):
         m = re.search(pattern, text, re.IGNORECASE)
         return int(m.group(1)) if m else 0
 
-    # Robust patterns
     TP = get(r"\bTP\b\s*[:=]?\s*(\d+)")
     TN = get(r"\bTN\b\s*[:=]?\s*(\d+)")
     FP = get(r"\bFP\b\s*[:=]?\s*(\d+)")
@@ -44,6 +44,10 @@ def compute_scores(TP, TN, FP, FN):
 results = []
 
 for root, dirs, files in os.walk(RESULT_FOLDER):
+    # ✅ Ignore virtual environment folders
+    if "venv" in root:
+        continue
+
     for filename in files:
         if filename.endswith(".txt"):
             path = os.path.join(root, filename)
@@ -56,10 +60,9 @@ for root, dirs, files in os.walk(RESULT_FOLDER):
 
                 TP, TN, FP, FN = extract_metrics(text)
 
-                # Debug missing metrics
+                # Skip invalid files
                 if TP + TN + FP + FN == 0:
                     print("⚠ No metrics found in:", filename)
-                    print("Preview:", text[:200])
                     continue
 
                 acc, prec, rec, spec, f1 = compute_scores(TP, TN, FP, FN)
@@ -103,5 +106,44 @@ else:
     # Save CSV
     output_path = os.path.join(RESULT_FOLDER, "final_evaluation.csv")
     df.to_csv(output_path, index=False)
-
     print("\n✅ Results saved to:", output_path)
+
+
+    # -----------------------------
+    # 📈 GRAPH 1: Accuracy vs F1-score
+    # -----------------------------
+    plt.figure(figsize=(10, 5))
+    plt.plot(df["Accuracy"], marker='o', label="Accuracy")
+    plt.plot(df["F1"], marker='s', label="F1-score")
+
+    plt.title("Model Performance Across Experiments")
+    plt.xlabel("Experiment Index")
+    plt.ylabel("Score")
+    plt.legend()
+    plt.grid(True)
+
+    graph1_path = os.path.join(RESULT_FOLDER, "accuracy_f1_plot.png")
+    plt.savefig(graph1_path)
+    plt.close()
+    print("📊 Graph saved:", graph1_path)
+
+
+    # -----------------------------
+    # 📊 GRAPH 2: Average Metrics
+    # -----------------------------
+    avg = df.mean(numeric_only=True)
+
+    metrics = ["Accuracy", "Precision", "Recall", "Specificity", "F1"]
+    values = [avg[m] for m in metrics]
+
+    plt.figure(figsize=(8, 5))
+    plt.bar(metrics, values)
+
+    plt.title("Average Performance Metrics")
+    plt.xlabel("Metrics")
+    plt.ylabel("Score")
+
+    graph2_path = os.path.join(RESULT_FOLDER, "average_metrics.png")
+    plt.savefig(graph2_path)
+    plt.close()
+    print("📊 Graph saved:", graph2_path)
